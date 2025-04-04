@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>OBS Voice Control</title>
+    <meta charset="UTF-8" />
+    <style>
+      body {
+        font-family: sans-serif;
+        padding: 1em;
+        background-color: #f0f0f0;
+      }
+      .status {
+        margin-bottom: 1em;
+      }
+      .setting {
+        margin-bottom: 1em;
+        padding: 1em;
+        border: 1px solid #ccc;
+        background-color: #fff;
+      }
+      .connected {
+        color: green;
+        font-weight: bold;
+      }
+      .disconnected {
+        color: red;
+        font-weight: bold;
+      }
+
+      button {
+        margin: 0.5em;
+        padding: 0.5em 1em;
+      }
+      #usageGuideContent {
+        margin-top: 2em;
+        padding: 1em;
+        border: 1px solid #ccc;
+        background-color: #fff;
+        display: none;
+      }
+      #usageGuideToggle {
+        cursor: pointer;
+        color: blue;
+        text-decoration: underline;
+        text-align: center;
+        margin: 1em 0;
+        padding: 0.5em;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>麻雀配信者専用枠認識プログラム</h1>
+    <span
+      >ブラウザー上で音声認識を行い、特定のキーワードに応じてOBS上の画像ソースの表示/非表示を切り替えます。<br />
+
+      <script
+        async
+        src="https://platform.twitter.com/widgets.js"
+        charset="utf-8"
+      ></script>
+      <strong>
+        本サイトを使用することで発生したいかなる損害についても、作者は責任を負いませんので、自己責任でご利用ください。
+      </strong>
+    </span>
+    <div class="setting">
+      <div class="status">
+        OBS接続状態: <span id="obsStatus" class="disconnected">未接続</span>
+      </div>
+      <div>
+        <label for="host">ホスト名:</label>
+        <input type="text" id="address" value="127.0.0.1" disabled />
+        <label for="port">ポート番号:</label>
+        <input type="number" id="port" value="4455" />
+        <label for="password">パスワード:</label>
+        <input type="password" id="password" />
+      </div>
+    </div>
+
+    <button id="connectButton">OBSに接続</button>
+    <p>
+      OBSのパスワードはOBSのメニュー上部のツール >
+      websocketサーバー設定から調べてください。
+      <br />詳しい設定方法は使い方ガイドをご覧ください。
+    </p>
+    <hr />
+    <h2>音声認識機能</h2>
+    <button id="startButton">認識開始</button>
+    <button id="stopButton" disabled>認識停止</button>
+    <div id="recognizeResult"></div>
+
+    <hr />
+
+    <div id="usageGuideToggle">---クリックで使い方ガイドを表示---</div>
+    <div id="usageGuideContent" style="display: none">
+      <blockquote class="twitter-tweet" data-media-max-width="560">
+        <p lang="ja" dir="ltr">
+          世界一見やすい麻雀配信を目指す一環として。<br />音声認識プログラムで、麻雀配信中に喋ったところに目印がつくようにしました。<br /><br />node.js
+          vosk obs-websocket.js
+          <a href="https://t.co/SEeW40iJjw">pic.twitter.com/SEeW40iJjw</a>
+        </p>
+        &mdash; なみもん (@MahjongNm)
+        <a
+          href="https://twitter.com/MahjongNm/status/1680975385348182017?ref_src=twsrc%5Etfw"
+          >July 17, 2023</a
+        >
+      </blockquote>
+      <h4>使い方ガイド</h4>
+      <ol>
+        <li>
+          <strong>OBSの準備-１(設定の確認)：</strong>
+          <ul>
+            <li>OBS Studioを起動します。</li>
+            <li>
+              メニューバーの「ツール」>「websocketサーバー設定」を開きます。
+              <br /><img src="src/obs_tool.png" alt="OBSツールメニュー" />
+            </li>
+            <li>
+              「WebSocketサーバーを有効にする」にチェックが入っていることを確認します。
+            </li>
+            <li>
+              「サーバーポート」（デフォルト:
+              4455）と、「認証を有効にする」がチェックされている場合は「パスワード」をメモします。
+            </li>
+            <li>「OK」または「適用」をクリックします。</li>
+          </ul>
+        </li>
+        <li>
+          <strong>OBSの準備-２（素材の配置）：</strong>
+          <ul>
+            <li>OBSのソースに「frame」という名前のフォルダを作成します。</li>
+            <li>
+              「frame」フォルダの中に「上家」「下家」「対面」という名前の画像ソースを準備します。<br />
+              <img src="src/obs_frame.png" alt="OBS frame" /><br />
+              使用する画像は、<a href="https://nureyon.com/frame-2">こういう</a
+              >枠組みの画像でも、指のマークでも、何でも構いません。<br />
+            </li>
+          </ul>
+        </li>
+        <li>
+          <strong>OBSへの接続:</strong>
+          <ul>
+            <li>
+              このページの「ポート番号」と「パスワード」（認証を有効にしている場合）の入力欄に、OBSで確認した情報を入力します。
+            </li>
+            <li>「OBSに接続」ボタンをクリックします。</li>
+            <li>
+              「OBS接続状態」が
+              <span class="connected">接続済み</span> になれば成功です。
+            </li>
+          </ul>
+        </li>
+        <li>
+          <strong>音声認識の開始:</strong>
+          <ul>
+            <li>
+              「認識開始」ボタンをクリックします。ブラウザによってはマイクの使用許可を求められますので、許可してください。
+            </li>
+            <li>
+              マイクに向かって話すと、認識されたテキストが画面下部に表示されます。
+            </li>
+            <li>
+              設定されたキーワード（
+              「上家、下家、対面」）を話すと、OBS上で対応する画像ソースが表示されます。<br />
+              ３秒後に、非表示に戻ります。
+            </li>
+          </ul>
+        </li>
+        <li>
+          <strong>音声認識の停止:</strong>
+          <ul>
+            <li>「認識停止」ボタンをクリックすると、音声認識が終了します。</li>
+          </ul>
+        </li>
+        <li>
+          <strong>注意点:</strong>
+          <ul>
+            <li>
+              音声認識はブラウザの機能を使用しているため、ブラウザの種類やバージョン、ネットワーク環境によって精度が変わることがあります。
+            </li>
+            <li>
+              OBSのwebsocket設定は、OBSのアップデートなどで変更される可能性があります。接続できなくなった場合は、再度設定を確認してください。
+            </li>
+          </ul>
+        </li>
+        <li>
+          <strong>ご意見・ご要望</strong>
+          <ul>
+            <li>
+              <a href="https://x.com/mahjongnm?s=11">なみもん</a
+              >までご連絡ください。
+            </li>
+            <li>
+              <a href="https://github.com/namimon-mahjong/obs-mahjong-marker"
+                >プルリクエスト</a
+              >も大歓迎です！
+            </li>
+          </ul>
+        </li>
+      </ol>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/obs-websocket-js"></script>
+    <script src="obs-websocket.js"></script>
+    <script src="recognition.js"></script>
+    <script src="word.js"></script>
+    <script>
+      // HTML要素
+      const obsStatusEl = document.getElementById("obsStatus");
+      const connectButton = document.getElementById("connectButton");
+      const startButton = document.getElementById("startButton");
+      const stopButton = document.getElementById("stopButton");
+      const recognizeResult = document.getElementById("recognizeResult");
+      const usageGuideToggle = document.getElementById("usageGuideToggle");
+      const usageGuideContent = document.getElementById("usageGuideContent");
+
+      // --- イベントリスナー設定 ---
+      document.addEventListener("DOMContentLoaded", () => {
+        if (connectButton) {
+          connectButton.addEventListener("click", connectOBS);
+        }
+        if (startButton) {
+          startButton.addEventListener("click", startRecognition);
+        }
+        if (stopButton) {
+          stopButton.addEventListener("click", stopRecognition);
+        }
+
+        // --- 使い方ガイドのクリックイベントリスナーを追加 ---
+        if (usageGuideToggle && usageGuideContent) {
+          usageGuideToggle.addEventListener("click", () => {
+            console.log("Usage guide toggle clicked");
+            // display スタイルを取得して判定
+            const isHidden = usageGuideContent.style.display === "none";
+            console.log("isHidden:", isHidden);
+            console.log(
+              "Usage guide content:",
+              usageGuideContent.style.display
+            );
+            // 表示状態を切り替える
+            usageGuideContent.style.display = isHidden ? "block" : "none";
+          });
+        }
+      });
+    </script>
+  </body>
+</html>
