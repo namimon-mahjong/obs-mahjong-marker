@@ -37,9 +37,17 @@ async function connectOBS() {
     updateOBSStatus("接続済み", "connected");
     obsConnected = true;
 
-    frameList = await obsSocket.call("GetGroupSceneItemList", {
-      sceneName: directoryName,
-    });
+    try {
+      frameList = await obsSocket.call("GetGroupSceneItemList", {
+        sceneName: directoryName,
+      });
+    } catch (error) {
+      updateOBSStatus(
+        `frameという名前のフォルダが見つかりません${error}`,
+        "disconnected"
+      );
+      return;
+    }
 
     if (frameList.sceneItems.length === 0) {
       console.warn(`No items found in scene "${directoryName}".`);
@@ -57,8 +65,10 @@ async function connectOBS() {
   } catch (error) {
     console.error("OBS WebSocket connection error:", error);
     console.error(error);
-
-    updateOBSStatus("接続失敗。使い方ガイドを確認してください", "disconnected");
+    updateOBSStatus(
+      `接続失敗。使い方ガイドを確認してください${error}`,
+      "disconnected"
+    );
     return;
   }
 }
